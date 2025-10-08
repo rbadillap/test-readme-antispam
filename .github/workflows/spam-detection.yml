@@ -1,9 +1,6 @@
 name: README Spam Detection
 
 on:
-  push:
-    paths:
-      - 'README.md'
   pull_request:
     paths:
       - 'README.md'
@@ -12,21 +9,37 @@ jobs:
   detect-spam:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Read README content
-        id: read-readme
+        with:
+          fetch-depth: 0
+          
+      - name: Get diff between PR and destination branch
+        id: get-diff
         run: |
-          echo "content<<EOF" >> $GITHUB_OUTPUT
-          cat README.md >> $GITHUB_OUTPUT
+          # Get the base branch (destination branch)
+          BASE_REF="${{ github.event.pull_request.base.ref }}"
+          
+          # Get the diff for README.md
+          git fetch origin $BASE_REF
+          DIFF=$(git diff origin/$BASE_REF...HEAD -- README.md)
+          
+          # Output the diff for the next step
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          echo "$DIFF" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           
-      - name: Analyze README for spam
+      - name: Analyze README changes for spam
+        id: analyze-spam
         uses: vercel/ai-action@v1
         with:
           prompt: |
-            You are a spam detection expert. Analyze the following README.md file content and determine if it contains spam.
+            You are a spam detection expert. Analyze the following git diff of changes made to a README.md file in a pull request.
+            
+            Your task is to categorize the changes into one of these categories:
+            - "spam": The changes contain spam content
+            - "unknown": You're not sure if it's spam or not
+            - "none": The changes are legitimate and not spam
             
             Spam indicators include:
             - Excessive promotional content
@@ -36,11 +49,19 @@ jobs:
             - Content that is not related to the project
             - Malicious links
             
-            Please analyze the content and respond with:
-            1. "SPAM" or "NOT_SPAM"
-            2. A confidence score (0-100)
-            3. A brief explanation of your decision
+            You must respond with a valid JSON object in this exact format:
+            {
+              "type": "spam" | "unknown" | "none",
+              "reason": "Brief explanation (only when type is spam or unknown)"
+            }
             
-            Here is the README content:
+            If the type is "none", you can omit the reason field or set it to an empty string.
             
-            ${{ steps.read-readme.outputs.content }}
+            Here is the git diff:
+            
+            ${{ steps.get-diff.outputs.diff }}
+          
+      - name: Output spam detection results
+        run: |
+          echo "Spam Detection Results:"
+          echo "${{ steps.analyze-spam.outputs.result }}"

@@ -5,10 +5,15 @@ This repository includes automated spam detection for the README.md file using @
 ## How It Works
 
 The spam detection workflow is triggered automatically when:
-- The README.md file is updated via push
 - A pull request modifies the README.md file
 
-The workflow uses AI to analyze the README content and detect potential spam based on:
+The workflow:
+1. Checks out the code with full git history
+2. Gets the git diff between the PR and the destination branch for README.md
+3. Passes the diff to @vercel/ai-action for analysis
+4. The AI categorizes the changes as: **spam**, **unknown**, or **none**
+
+The workflow uses AI to analyze the README changes and detect potential spam based on:
 - Excessive promotional content
 - Unrelated links or advertisements
 - Suspicious URLs or phishing attempts
@@ -16,9 +21,16 @@ The workflow uses AI to analyze the README content and detect potential spam bas
 - Content not related to the project
 - Malicious links
 
-## Workflow
+## Workflow Output
 
-The spam detection is implemented in `.github/workflows/spam-detection.yml` and uses `@vercel/ai-action` to analyze the README content and provide:
-1. Classification (SPAM or NOT_SPAM)
-2. Confidence score (0-100)
-3. Brief explanation of the decision
+The spam detection is implemented in `.github/workflows/spam-detection.yml` and uses `@vercel/ai-action` to analyze the README changes and provide structured output:
+
+```json
+{
+  "type": "spam" | "unknown" | "none",
+  "reason": "Brief explanation (only when type is spam or unknown)"
+}
+```
+
+- **type**: The classification of the changes (spam, unknown, or none)
+- **reason**: An explanation of why the changes were flagged (only included when type is spam or unknown)
