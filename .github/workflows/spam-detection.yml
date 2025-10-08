@@ -31,7 +31,7 @@ jobs:
           
       - name: Analyze README changes for spam
         id: analyze-spam
-        uses: vercel/ai-action@v1
+        uses: vercel/ai-action@v2
         with:
           prompt: |
             You are a spam detection expert. Analyze the following git diff of changes made to a README.md file in a pull request.
@@ -49,19 +49,40 @@ jobs:
             - Content that is not related to the project
             - Malicious links
             
-            You must respond with a valid JSON object in this exact format:
-            {
-              "type": "spam" | "unknown" | "none",
-              "reason": "Brief explanation (only when type is spam or unknown)"
-            }
-            
-            If the type is "none", you can omit the reason field or set it to an empty string.
-            
             Here is the git diff:
             
             ${{ steps.get-diff.outputs.diff }}
+          schema: |
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "object",
+              "properties": {
+                "analysis": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["spam", "unknown", "none"]
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["analysis"],
+              "additionalProperties": false
+            }
+          model: 'openai/gpt-4o'
+          api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
           
       - name: Output spam detection results
         run: |
           echo "Spam Detection Results:"
-          echo "${{ steps.analyze-spam.outputs.result }}"
+          echo '${{ steps.analyze-spam.outputs.json }}'
+          
+          # Parse and display specific fields
+          echo "Type: ${{ fromJson(steps.analyze-spam.outputs.json).analysis.type }}"
+          echo "Reason: ${{ fromJson(steps.analyze-spam.outputs.json).analysis.reason }}"

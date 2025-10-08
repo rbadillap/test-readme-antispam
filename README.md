@@ -21,16 +21,26 @@ The workflow uses AI to analyze the README changes and detect potential spam bas
 - Content not related to the project
 - Malicious links
 
+## Configuration
+
+The workflow uses `@vercel/ai-action@v2` with the following configuration:
+- **prompt**: Instructions for the AI to analyze the git diff and categorize spam
+- **schema**: JSON schema that structures the output with `type` and `reason` fields
+- **model**: `openai/gpt-4o` for AI-powered analysis
+- **api-key**: Uses `AI_GATEWAY_API_KEY` secret for authentication
+
 ## Workflow Output
 
-The spam detection is implemented in `.github/workflows/spam-detection.yml` and uses `@vercel/ai-action` to analyze the README changes and provide structured output:
+The spam detection is implemented in `.github/workflows/spam-detection.yml` and uses `@vercel/ai-action` to analyze the README changes and provide structured JSON output:
 
 ```json
 {
-  "type": "spam" | "unknown" | "none",
-  "reason": "Brief explanation (only when type is spam or unknown)"
+  "analysis": {
+    "type": "spam" | "unknown" | "none",
+    "reason": "Brief explanation"
+  }
 }
 ```
 
 - **type**: The classification of the changes (spam, unknown, or none)
-- **reason**: An explanation of why the changes were flagged (only included when type is spam or unknown)
+- **reason**: An explanation of why the changes were flagged
