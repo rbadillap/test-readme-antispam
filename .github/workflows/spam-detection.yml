@@ -1,0 +1,46 @@
+name: README Spam Detection
+
+on:
+  push:
+    paths:
+      - 'README.md'
+  pull_request:
+    paths:
+      - 'README.md'
+
+jobs:
+  detect-spam:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Read README content
+        id: read-readme
+        run: |
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat README.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Analyze README for spam
+        uses: vercel/ai-action@v1
+        with:
+          prompt: |
+            You are a spam detection expert. Analyze the following README.md file content and determine if it contains spam.
+            
+            Spam indicators include:
+            - Excessive promotional content
+            - Unrelated links or advertisements
+            - Suspicious URLs or phishing attempts
+            - Repetitive content
+            - Content that is not related to the project
+            - Malicious links
+            
+            Please analyze the content and respond with:
+            1. "SPAM" or "NOT_SPAM"
+            2. A confidence score (0-100)
+            3. A brief explanation of your decision
+            
+            Here is the README content:
+            
+            ${{ steps.read-readme.outputs.content }}
