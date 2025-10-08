@@ -1,0 +1,149 @@
+name: README Anti-Spam Check
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get README.md diff
+        id: get-diff
+        run: |
+          # Get the base and head commits
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          # Get the diff for README.md
+          DIFF=$(git diff $BASE_SHA..$HEAD_SHA -- README.md)
+
+          # Check if there are changes
+          if [ -z "$DIFF" ]; then
+            echo "No changes to README.md"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            # Save diff to a file
+            echo "$DIFF" > /tmp/readme_diff.txt
+          fi
+
+      - name: Setup Node.js
+        if: steps.get-diff.outputs.has_changes == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vercel AI SDK
+        if: steps.get-diff.outputs.has_changes == 'true'
+        run: |
+          mkdir -p /tmp/ai-analyzer
+          cd /tmp/ai-analyzer
+          npm init -y
+          npm install ai @ai-sdk/openai
+
+      - name: Create AI analysis script
+        if: steps.get-diff.outputs.has_changes == 'true'
+        run: |
+          cat > /tmp/ai-analyzer/analyze.js << 'EOFSCRIPT'
+          const { openai } = require('@ai-sdk/openai');
+          const { generateText } = require('ai');
+          const fs = require('fs');
+
+          async function analyze() {
+            const diff = fs.readFileSync('/tmp/readme_diff.txt', 'utf8');
+
+            const prompt = `Analyze the following README.md changes and categorize them as one of:
+          - "spam": The changes appear to be spam, promotional content, or malicious
+          - "unknown": The changes are unclear or suspicious but not definitively spam
+          - "none": The changes are legitimate and not spam
+
+          README.md diff:
+          \`\`\`
+          ${diff}
+          \`\`\`
+
+          Respond with ONLY one word: spam, unknown, or none`;
+
+            try {
+              const { text } = await generateText({
+                model: openai('gpt-4-turbo-preview'),
+                prompt: prompt,
+              });
+
+              const category = text.toLowerCase().trim();
+              console.log(category);
+            } catch (error) {
+              console.error('Error:', error.message);
+              process.exit(1);
+            }
+          }
+
+          analyze();
+          EOFSCRIPT
+
+      - name: Run AI analysis
+        if: steps.get-diff.outputs.has_changes == 'true'
+        id: ai-analysis
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          cd /tmp/ai-analyzer
+          CATEGORY=$(node analyze.js)
+          echo "category=$CATEGORY" >> $GITHUB_OUTPUT
+          echo "AI Analysis Result: $CATEGORY"
+
+      - name: Add label based on analysis
+        if: steps.get-diff.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const category = '${{ steps.ai-analysis.outputs.category }}';
+            const label = category.includes('spam') ? 'spam' :
+                         category.includes('unknown') ? 'unknown' : 'none';
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [label]
+            });
+
+      - name: Comment on PR
+        if: steps.get-diff.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const category = '${{ steps.ai-analysis.outputs.category }}';
+
+            let message = `## README Anti-Spam Analysis\n\n`;
+            message += `Category: **${category}**\n\n`;
+
+            if (category.includes('spam')) {
+              message += `⚠️ The changes to README.md appear to be spam or promotional content.`;
+            } else if (category.includes('unknown')) {
+              message += `⚠️ The changes to README.md are unclear or suspicious. Please review manually.`;
+            } else {
+              message += `✅ The changes to README.md appear to be legitimate.`;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: message
+            });
