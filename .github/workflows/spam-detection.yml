@@ -30,65 +30,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Analyze README changes for spam
-        id: analyze-spam-v1
-        uses: vercel/ai-action@v2
-        with:
-          prompt: |
-            You are a spam detection expert. Analyze the following git diff of changes made to a README.md file in a pull request.
-            
-            Your task is to categorize the changes into one of these categories:
-            - "spam": The changes contain spam content
-            - "unknown": You're not sure if it's spam or not
-            - "none": The changes are legitimate and not spam
-            
-            Spam indicators include:
-            - Excessive promotional content
-            - Unrelated links or advertisements
-            - Suspicious URLs or phishing attempts
-            - Repetitive content
-            - Content that is not related to the project
-            - Malicious links
-            
-            Here is the git diff:
-            
-            ${{ steps.get-diff.outputs.diff }}
-          schema: |
-            {
-              "$schema": "https://json-schema.org/draft/2020-12/schema",
-              "type": "object",
-              "properties": {
-                "analysis": {
-                  "type": "object",
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": ["spam", "unknown", "none"]
-                    },
-                    "reason": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["type"],
-                  "additionalProperties": false
-                }
-              },
-              "required": ["analysis"],
-              "additionalProperties": false
-            }
-          model: 'openai/gpt-4o'
-          api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
-          
-      - name: Output spam detection results
-        run: |
-          echo "Spam Detection Results:"
-          echo '${{ steps.analyze-spam-v1.outputs.json }}'
-          
-          # Parse and display specific fields
-          echo "Type: ${{ fromJson(steps.analyze-spam-v1.outputs.json).analysis.type }}"
-          echo "Reason: ${{ fromJson(steps.analyze-spam-v1.outputs.json).analysis.reason }}"
-
-      - name: Analyze README changes for spam
-        id: analyze-spam-v2
+        id: analyze-readme
         uses: vercel/ai-action@v2
         with:
           prompt: |
@@ -134,8 +76,8 @@ jobs:
       - name: Output spam detection results
         run: |
           echo "Spam Detection Results:"
-          echo '${{ steps.analyze-spam-v2.outputs.json }}'
+          echo '${{ steps.analyze-readme.outputs.json }}'
           
           # Parse and display specific fields
-          echo "Type: ${{ fromJson(steps.analyze-spam-v2.outputs.json).analysis.type }}"
-          echo "Reason: ${{ fromJson(steps.analyze-spam-v2.outputs.json).analysis.reason }}"
+          echo "Type: ${{ fromJson(steps.analyze-readme.outputs.json).analysis.type }}"
+          echo "Reason: ${{ fromJson(steps.analyze-readme.outputs.json).analysis.reason }}"
