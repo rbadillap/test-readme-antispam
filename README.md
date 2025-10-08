@@ -1,4 +1,4 @@
-# test-readme-antispam
+# test-readme-antispam - viva costa rica!
 
 This repository includes automated spam detection for the README.md file using @vercel/ai-action.
 
