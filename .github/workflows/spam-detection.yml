@@ -28,26 +28,21 @@ jobs:
           echo "diff<<EOF" >> $GITHUB_OUTPUT
           echo "$DIFF" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
+
       - name: Analyze README changes for spam
-        id: analyze-spam
+        id: analyze-readme
         uses: vercel/ai-action@v2
         with:
           prompt: |
-            You are a spam detection expert. Analyze the following git diff of changes made to a README.md file in a pull request.
+            Some PRs modify only the README with trivial, irrelevant, or promotional link changes. These are considered spam unless:
+              • They fix a real typographical error,
+              • They add useful documentation related to the project,
+              • Or they include verifiable technical examples.
             
             Your task is to categorize the changes into one of these categories:
             - "spam": The changes contain spam content
             - "unknown": You're not sure if it's spam or not
             - "none": The changes are legitimate and not spam
-            
-            Spam indicators include:
-            - Excessive promotional content
-            - Unrelated links or advertisements
-            - Suspicious URLs or phishing attempts
-            - Repetitive content
-            - Content that is not related to the project
-            - Malicious links
             
             Here is the git diff:
             
@@ -81,8 +76,8 @@ jobs:
       - name: Output spam detection results
         run: |
           echo "Spam Detection Results:"
-          echo '${{ steps.analyze-spam.outputs.json }}'
+          echo '${{ steps.analyze-readme.outputs.json }}'
           
           # Parse and display specific fields
-          echo "Type: ${{ fromJson(steps.analyze-spam.outputs.json).analysis.type }}"
-          echo "Reason: ${{ fromJson(steps.analyze-spam.outputs.json).analysis.reason }}"
+          echo "Type: ${{ fromJson(steps.analyze-readme.outputs.json).analysis.type }}"
+          echo "Reason: ${{ fromJson(steps.analyze-readme.outputs.json).analysis.reason }}"
