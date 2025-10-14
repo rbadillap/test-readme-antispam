@@ -30,3 +30,24 @@ jobs:
           echo ""
           echo "Full JSON:"
           echo '${{ steps.spam-check.outputs.raw-json }}'
+      
+      - name: Close PR if spam detected
+        if: steps.spam-check.outputs.spam-type == 'spam'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'This PR may have been opened accidentally or contains changes that don\'t align with our documentation guidelines. I\'m closing it now, but feel free to open a new PR with more substantial documentation improvements!\n\n' +
+                    'Reason: ${{ steps.spam-check.outputs.analysis-reason }}'
+            })
+            
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              state: 'closed'
+            })
