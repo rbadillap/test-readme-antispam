@@ -1,8 +1,9 @@
-# Test README
+# AI README Antispam Demo
 
-This is a test README file to trigger the spam detection workflow.
+Live demonstration of my action [rbadillap/ai-readme-antispam](https://github.com/rbadillap/ai-readme-antispam) - an action that detects and prevents spam README edits.
 
-## Features
+## Try It (carefully 😅)
 
-- Basic documentation
-- Simple structure
+Open a PR modifying this README and watch the AI analyze it! Spam PRs are automatically closed.
+
+See the workflow: [`.github/workflows/spam-detection.yml`](/.github/workflows/spam-detection.yml)
