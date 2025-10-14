@@ -41,8 +41,8 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'This PR may have been opened accidentally or contains changes that don\'t align with our documentation guidelines. I\'m closing it now, but feel free to open a new PR with more substantial documentation improvements!\n\n' +
-                    'Reason: ${{ steps.spam-check.outputs.analysis-reason }}'
+              body: "This PR may have been opened accidentally or contains changes that don't align with our documentation guidelines. I'm closing it now, but feel free to open a new PR with more substantial documentation improvements!\n\n" +
+                    "Reason: ${{ steps.spam-check.outputs.analysis-reason }}"
             })
             
             await github.rest.pulls.update({
