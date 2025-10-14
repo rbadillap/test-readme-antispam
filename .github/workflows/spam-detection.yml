@@ -18,6 +18,11 @@ jobs:
       issues: write
       pull-requests: write
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
       - name: Check for spam in README changes
         id: spam-check
         uses: rbadillap/ai-readme-antispam@9d3501d24949913394665310450296d234829452 # v0.1.0-beta
