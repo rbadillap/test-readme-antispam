@@ -20,12 +20,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       
       - name: Check for spam in README changes
         id: spam-check
-        uses: rbadillap/ai-readme-antispam@2f8bdbb895b88717c6446fb5b39b5186b36e304e # v0.1.0-beta
+        uses: rbadillap/ai-readme-antispam@6cb6853e6258c8e4dcbd0f20027aac94dbedea83 # v0.1.0-beta
         with:
           api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
           model: 'openai/gpt-4o'
