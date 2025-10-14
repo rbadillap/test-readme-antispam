@@ -14,6 +14,9 @@ concurrency:
 jobs:
   detect-spam:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - name: Check for spam in README changes
         id: spam-check
